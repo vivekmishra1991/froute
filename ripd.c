@@ -1,9 +1,10 @@
 #include "rip.h"
 #include<stdio.h>
+#include<pthread.h>
 
 int main() {
 //defining localhost
-
+	//initscr();
 	inet_pton(AF_INET, "127.0.0.1", &(localhost));
 //	printf("%s\n",inet_ntoa(localhost));
 	inet_pton(AF_INET, "192.10.0.1", &(dummy1));
@@ -11,9 +12,6 @@ int main() {
 	inet_pton(AF_INET, "210.10.0.1", &(dummy2));
 	//printf("%s\n",inet_ntoa(dummy));
 	rte_head = alloc_route_entry();
-
-
-
 
 	if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
 		printf("\nSocket creation error \n");
@@ -32,15 +30,24 @@ int main() {
 		perror("");
 		exit(0);
 	}
-	fill_route_table();
 
-	print_route_table();
+	//Creating "timer thread" that checks routes & deletes if broken route is encountered or timeout expires
 
-	//Once router initializes for the first time,a REQUEST Packet is constructed ,i.e sent to all neighbor
-	request_routing_table();
+	init();
+	if (pthread_create(&rt_checker_thread, NULL, rt_checker, NULL)) {
+		fprintf(stderr, "Error creating trt_checker_thread\n");
+		return 1;
+	}
 
+	if (pthread_create(&regular_update_thread, NULL, send_regular_update, NULL)) {
+		fprintf(stderr, "Error creating regular_update_thread\n");
+		return 1;
+	}
 
-//	input_processor();
+	while (1) {
+		input_processor();
+	}
 
+	pthread_exit(NULL);
 	return 0;
 }

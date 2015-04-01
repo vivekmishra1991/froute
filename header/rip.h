@@ -2,8 +2,6 @@ typedef char byte;
 
 /*
  * rip.h
- *
- *
  */
 
 #ifndef RIP_H_
@@ -18,6 +16,9 @@ typedef char byte;
 #define RESPONSE 2
 #define VERSION 1
 #define INVALID_METRIC 20
+#define TIMEOUT_INTERVAL 4
+#define GARBAGE_INTERVAL 1
+#define MAX_RIP_ENTRY_LIMIT 50
 
 /**
  *struct rip_header - rip entry header
@@ -57,36 +58,54 @@ struct rip_entry {
 };
 
 struct route_entry {
-    struct  route_entry *next;		/*linked list pointer */
-    struct in_addr destination;
+	struct route_entry *next; /*linked list pointer */
+	struct in_addr destination;
 	uint32_t metric;
 	struct in_addr nexthop; /*next router along the path to destination */
-	byte routeflag; /*route change flag */
-	int timeout;
-	int garbage;
+	byte routechange; /*route change flag */
+	unsigned long timeout;
+	unsigned long garbage;
 };
 
-
 int sockfd;
-struct in_addr localhost,dummy1,dummy2;
+struct in_addr localhost, dummy1, dummy2;
 struct route_entry* rte_head; //first entry of the routing table , keeps track of the table linked list
-
-
+pthread_t rt_checker_thread,regular_update_thread;
+int i;
 /*
  * Prototypes
  */
-char* copy_header_to_packet(struct rip_header,char*);
-struct rip_entry* set_rip_entry(struct rip_entry*,uint16_t,struct in_addr ,uint32_t);
-char* copy_rip_entry_to_packet(struct rip_entry,char*);
-void request_handler(struct in_addr,char*);
-void response_handler(struct in_addr,char*);
+void init(void);
+int add_route_entry(struct in_addr, uint32_t, struct in_addr);
+struct route_entry* set_route_entry(struct route_entry *, struct in_addr,
+		uint32_t, struct in_addr);
+void input_processor(void);
+void print_route_table(void);
+void request_routing_table(void);
+int fill_route_table(void);
+struct route_entry* alloc_route_entry(void);
+int is_neighbour(struct in_addr);
+char* copy_header_to_packet(struct rip_header, char*);
+struct rip_entry* set_rip_entry(struct rip_entry*, uint16_t, struct in_addr,
+		uint32_t);
+char* copy_rip_entry_to_packet(struct rip_entry, char*);
+void request_handler(struct in_addr, char*);
+void response_handler(struct in_addr, char*);
 int get_number_of_entries(char*);
-void extract_ip_addr(struct in_addr*,char*);
-void construct_response_message(struct rip_entry* ,char* ,int,struct in_addr);
+void extract_ip_addr(struct in_addr*, char*);
+void construct_response_message(struct rip_entry*, char*, int, struct in_addr);
 void print_rip_entry(struct rip_entry*);
-int  route_exist(struct rip_entry* ,struct route_entry**);
+int route_exist(struct rip_entry*, struct route_entry**);
+int validate_route_entry(int);
+int sendmesg(unsigned short int, int, struct in_addr, int, char*, int);
+int MIN(int, int);
 //struct rip_entry* get_first_rip_entry(char*);
 
+//Timer Functions
+void rt_checker(void);
+void delete_rte(struct route_entry*, struct route_entry*);
+void send_regular_update(void);
+void construct_regular_message(char*,struct in_addr,struct route_entry*);
 
 
 
