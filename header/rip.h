@@ -9,15 +9,17 @@ typedef char byte;
 
 #include<stdint.h>
 #include <netinet/in.h>
+#include <linux/rtnetlink.h>
 
+#define COST 1
 #define INF 16
 #define RIP_PORT 52100//real port is 520
 #define REQUEST 1
 #define RESPONSE 2
 #define VERSION 1
 #define INVALID_METRIC 20
-#define TIMEOUT_INTERVAL 4
-#define GARBAGE_INTERVAL 1
+#define TIMEOUT_INTERVAL 120
+#define GARBAGE_INTERVAL 30
 #define MAX_RIP_ENTRY_LIMIT 50
 
 /**
@@ -68,7 +70,9 @@ struct route_entry {
 };
 
 int sockfd;
-struct in_addr localhost, dummy1, dummy2;
+int nl_fd,rtn;
+struct sockaddr_nl sock_addr;
+struct in_addr localhost, dummy1, dummy2,nbr;
 struct route_entry* rte_head; //first entry of the routing table , keeps track of the table linked list
 pthread_t rt_checker_thread,regular_update_thread;
 int i;
